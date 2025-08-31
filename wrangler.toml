@@ -1,0 +1,16 @@
+name = "steam-names"
+workers_dev = true
+compatibility_date = "2025-08-30"
+
+main = "build/js/packages/worker/kotlin/worker.js"
+
+[build]
+command = "gradlew :compileProductionExecutableKotlinJs"
+
+[observability.logs]
+enabled = true
+
+[[r2_buckets]]
+binding = "STEAM_NAMES"
+bucket_name = "steam-names"
+jurisdiction = "eu"
