@@ -6,6 +6,9 @@ Proudly made with Kotlin/JS.
 
 This service is part of my [ONI Seed Browser](https://stefan-oltmann.de/oni-seed-browser).
 
+> [!NOTE]  
+> This is experimental code. At the moment, command processing takes ~35 ms, pushing it beyond the limits of the free worker tier.
+
 ## Why this setup?
 
 At first glance, maintaining a JSON file in R2 may seem unusual. However, this design offers several advantages:
