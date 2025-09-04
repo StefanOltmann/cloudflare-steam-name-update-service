@@ -7,6 +7,9 @@ main = "build/js/packages/worker/kotlin/worker.mjs"
 [build]
 command = "gradlew :compileProductionExecutableKotlinJs"
 
+[limits]
+cpu_ms = 10
+
 [observability.logs]
 enabled = true
 
