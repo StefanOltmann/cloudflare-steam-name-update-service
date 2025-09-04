@@ -15,7 +15,10 @@ repositories {
 kotlin {
 
     js(IR) {
-        // browser()
+
+        /* Important: Cloudflare workers are V8 isolates. It's *not* a Node.js environment. */
+        nodejs()
+
         binaries.executable()
     }
 
@@ -23,16 +26,11 @@ kotlin {
 
         jsMain.dependencies {
 
-            /* Standard libraries */
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1-0.6.x-compat")
-
-            /* JSON */
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-
-            /* JWT */
-            implementation("com.appstractive:jwt-kt-js:1.2.1")
-            implementation("com.appstractive:jwt-ecdsa-kt:1.2.1")
+            /*
+             * Kotlin Wrappers for the Web contain some helpful APIs
+             * that result in cleaner code.
+             */
+            implementation("org.jetbrains.kotlin-wrappers:kotlin-web:2025.9.2")
         }
     }
 }
@@ -43,12 +41,18 @@ tasks.withType<KotlinJsCompile>().configureEach {
     }
 }
 
+/**
+ * This task adds the Cloudflare workers entry point.
+ */
 tasks.named("jsProductionExecutableCompileSync") {
 
     val entrypointFile = "${layout.buildDirectory.asFile.get()}/js/packages/${project.name}/kotlin/${project.name}.mjs"
 
     outputs.file(entrypointFile)
 
+    /*
+     * The Cloudflare workers expect this entry point.
+     */
     val jsEntrypoint = """
             /* The entrypoint expected by Cloudflare */
             export default {

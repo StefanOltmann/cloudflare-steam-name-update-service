@@ -18,52 +18,99 @@
  */
 package util
 
-import com.appstractive.jwt.JWT
-import com.appstractive.jwt.from
-import com.appstractive.jwt.signatures.es256
-import com.appstractive.jwt.verify
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
+import js.array.jsArrayOf
+import js.buffer.ArrayBuffer
+import js.json.parse
+import js.objects.unsafeJso
+import js.typedarrays.Uint8Array
+import js.typedarrays.toByteArray
+import js.typedarrays.toUint8Array
+import web.crypto.*
+import web.encoding.TextEncoder
+import kotlin.io.encoding.Base64
 
-private val JWT_PUBLIC_KEY =
-    """
-        -----BEGIN PUBLIC KEY-----
-        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEBHeRvXUxh4O12jjfoGNN/naxqfXboyYY7Ma+pkALk2hk9PYPhVoHk5Ar03k94kyhE9v0i1AEVLXN9WuSqE5+eA==
-        -----END PUBLIC KEY-----
-    """.trimIndent()
+private const val JWT_PUBLIC_KEY =
+    "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEBHeRvXUxh4O12jjfoGNN/naxqfXboyYY7Ma+pkALk2hk9PYPhVoHk5Ar03k94kyhE9v0i1AEVLXN9WuSqE5+eA=="
 
 /**
- * Validates tokens from https://steam.auth.stefanoltmann.de/login,
- * which runs https://github.com/StefanOltmann/steam-login-helper
+ * JWTs are encoded Base64 URL-safe without padding.
  */
-internal suspend fun getValidSteamIdHash(token: String): String? {
+private val base64jwt = Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT)
 
-    try {
+private val textEncoder = TextEncoder()
 
-        val jwt: JWT = JWT.from(token)
+private fun utf8Decode(uint8arr: Uint8Array<*>): String =
+    uint8arr.toByteArray().decodeToString()
 
-        val verified = jwt.verify {
+private fun base64urlToUint8Array(base64url: String): Uint8Array<ArrayBuffer> =
+    base64jwt.decode(base64url).toUint8Array()
 
-            es256 { pem(JWT_PUBLIC_KEY) }
-        }
+private fun base64ToUint8Array(base64: String): Uint8Array<ArrayBuffer> =
+    Base64.decode(base64).toUint8Array()
 
-        if (!verified)
-            return null
+private external interface HeaderJson {
+    val alg: String
+}
 
-        /* Valid tokens contain the "hash" claim. */
-        val hash = jwt.claims["hash"]?.jsonPrimitive?.contentOrNull
-            ?: return null
+private external interface Payload {
+    val hash: String
+}
 
-        return hash
+suspend fun getValidSteamIdHash(
+    token: String
+): String? {
 
-    } catch (ex: Exception) {
+    val parts = token.split('.')
 
-        /*
-         * These are most likely errors caused by invalid tokens.
-         */
-
-        ex.printStackTrace()
-
+    /*
+     * Exclude malformed tokens.
+     */
+    if (parts.size != 3)
         return null
-    }
+
+    val (headerBase64, payloadBase64, signatureBase64) = parts
+
+    val headerJson = parse<HeaderJson>(
+        text = utf8Decode(
+            uint8arr = base64urlToUint8Array(headerBase64)
+        )
+    )
+
+    if (headerJson.alg != "ES256")
+        return null
+
+    val data = textEncoder.encode("$headerBase64.$payloadBase64")
+
+    val signature = base64urlToUint8Array(signatureBase64)
+
+    val keyData = base64ToUint8Array(JWT_PUBLIC_KEY)
+
+    val cryptoKey: CryptoKey = crypto.subtle.importKey(
+        format = KeyFormat.spki,
+        keyData = keyData,
+        algorithm = unsafeJso<EcKeyImportParams> {
+            name = "ECDSA"
+            namedCurve = "P-256"
+        },
+        extractable = false,
+        keyUsages = jsArrayOf(KeyUsage.verify),
+    )
+
+    val verified: Boolean = crypto.subtle.verify(
+        algorithm = unsafeJso<EcdsaParams> {
+            name = "ECDSA"
+            hash = "SHA-256"
+        },
+        key = cryptoKey,
+        signature = signature,
+        data = data
+    )
+
+    if (!verified)
+        return null
+
+    val result: Payload =
+        parse(utf8Decode(base64urlToUint8Array(payloadBase64)))
+
+    return result.hash
 }

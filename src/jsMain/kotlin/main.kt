@@ -50,32 +50,23 @@ suspend fun handleRequestAsync(request: Request, env: Env, ctx: dynamic): Respon
     if (request.method != "POST")
         return createDefaultResponse(405, "Method not allowed")
 
-    val username = request.text().await().trim()
+    /*
+     * Get the wanted username from the request body.
+     */
+    val username: String = request.text().await().trim().ifBlank { null }
+        ?: return createDefaultResponse(400, "Missing content")
 
     /*
-     * Reject empty POST bodies.
+     * We need a token or the request is unauthorized.
      */
-    if (username.isEmpty())
-        return createDefaultResponse(400, "Missing content")
-
     val token = request.headers.get("token")
+        ?: return createDefaultResponse(401, "Missing header 'token'")
 
     /*
-     * If the token is missing, return a 401 Unauthorized response.
+     * We need a valid Steam ID hash from the token, or the request is unauthorized.
      */
-    if (token == null)
-        return createDefaultResponse(401, "Missing header 'token'")
-
-    /*
-     * Validate the token.
-     */
-    val steamIdHash: String? = getValidSteamIdHash(token)
-
-    /**
-     * Reject invalid or outdated tokens.
-     */
-    if (steamIdHash == null)
-        return createDefaultResponse(401, "Invalid token")
+    val steamIdHash: String = getValidSteamIdHash(token)
+        ?: return createDefaultResponse(401, "Invalid token")
 
     /*
      * Read the existing name file from R2.
@@ -85,7 +76,7 @@ suspend fun handleRequestAsync(request: Request, env: Env, ctx: dynamic): Respon
 
     if (objectBody == null) {
 
-        console.log("R2 GET operation failed: File $FILENAME not found")
+        console.error("R2 GET operation failed: File $FILENAME not found")
 
         return createDefaultResponse(500, "File not found")
     }
@@ -103,7 +94,7 @@ suspend fun handleRequestAsync(request: Request, env: Env, ctx: dynamic): Respon
 
         if (usernameTaken) {
 
-            console.log("$steamIdHash tried to take '$username'.")
+            console.warn("$steamIdHash tried to take '$username'.")
 
             return createDefaultResponse(409, "Username '$username' is already taken.")
         }
