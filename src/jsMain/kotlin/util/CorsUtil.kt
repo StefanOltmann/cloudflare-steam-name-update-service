@@ -23,6 +23,12 @@ import org.w3c.fetch.Headers
 internal fun Headers.appendCorsOptions() {
 
     set("Access-Control-Allow-Origin", "*")
-    set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    set("Access-Control-Allow-Methods", "POST, OPTIONS")
     set("Access-Control-Allow-Headers", "Content-Type, token")
+
+    /*
+     * Cache CORS options for one year because they won't change.
+     * Also, repeated CORS preflight requests cost us traffic and server time.
+     */
+    set("Access-Control-Max-Age", "31536000")
 }
