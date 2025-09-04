@@ -1,8 +1,8 @@
-name = "steam-names"
+name = "steam-names-kt"
 workers_dev = true
-compatibility_date = "2025-08-30"
+compatibility_date = "2025-07-30"
 
-main = "build/js/packages/worker/kotlin/worker.js"
+main = "build/js/packages/worker/kotlin/worker.mjs"
 
 [build]
 command = "gradlew :compileProductionExecutableKotlinJs"

@@ -1,3 +1,6 @@
+import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
+
 plugins {
     kotlin("multiplatform") version "2.2.10"
     kotlin("plugin.serialization") version "2.2.10"
@@ -31,5 +34,31 @@ kotlin {
             implementation("com.appstractive:jwt-kt-js:1.2.1")
             implementation("com.appstractive:jwt-ecdsa-kt:1.2.1")
         }
+    }
+}
+
+tasks.withType<KotlinJsCompile>().configureEach {
+    compilerOptions {
+        target.set("es2015")
+    }
+}
+
+tasks.named("jsProductionExecutableCompileSync") {
+
+    val entrypointFile = "${layout.buildDirectory.asFile.get()}/js/packages/${project.name}/kotlin/${project.name}.mjs"
+
+    outputs.file(entrypointFile)
+
+    val jsEntrypoint = """
+            /* The entrypoint expected by Cloudflare */
+            export default {
+                fetch(request, env, ctx) {
+                    return handleRequest(request, env, ctx);
+                },
+            };
+        """.trimIndent()
+
+    doLast {
+        File(entrypointFile).appendText(jsEntrypoint)
     }
 }
