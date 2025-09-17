@@ -1,6 +1,7 @@
 # Cloudflare Steam Name Update Service
 
 ![Kotlin](https://img.shields.io/badge/kotlin-2.2.20-blue.svg?logo=kotlin)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-gray?&logo=GitHub-Sponsors&logoColor=EA4AAA)](https://github.com/sponsors/StefanOltmann)
 
 A **Cloudflare Worker** to update user-chosen names for salted Steam IDs in a `names.json` file stored on **Cloudflare R2**.
