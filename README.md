@@ -1,5 +1,8 @@
 # Cloudflare Steam Name Update Service
 
+![Kotlin](https://img.shields.io/badge/kotlin-2.2.20-blue.svg?logo=kotlin)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-gray?&logo=GitHub-Sponsors&logoColor=EA4AAA)](https://github.com/sponsors/StefanOltmann)
+
 A **Cloudflare Worker** to update user-chosen names for salted Steam IDs in a `names.json` file stored on **Cloudflare R2**.
 
 Proudly made with Kotlin/JS.
